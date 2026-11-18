@@ -1,0 +1,22 @@
+{
+  "name": "olevs-api",
+  "private": true,
+  "version": "1.1.0",
+  "description": "REST API and MongoDB store for the OLEVS watch shop",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "seed:export": "node scripts/export-catalog.mjs",
+    "seed:reset": "node scripts/reset-db.mjs",
+    "admin:create": "node scripts/create-admin.mjs",
+    "db:check": "node scripts/check-connection.mjs"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "mongodb": "^7.8.0"
+  }
+}
