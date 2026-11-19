@@ -38,6 +38,12 @@ export const config = {
   cookieSecure:
     text(process.env.COOKIE_SECURE) === "true" ||
     text(process.env.NODE_ENV) === "production",
+  // SameSite=None is required when the storefront lives on a different site
+  // (e.g. Netlify) than the API (e.g. Render); it also forces Secure.
+  cookieSameSite: (() => {
+    const value = (text(process.env.COOKIE_SAMESITE) ?? "Lax").toLowerCase();
+    return ["lax", "none", "strict"].includes(value) ? value[0].toUpperCase() + value.slice(1) : "Lax";
+  })(),
 };
 
 export const missingConfig = () => {

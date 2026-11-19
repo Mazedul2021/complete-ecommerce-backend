@@ -206,8 +206,9 @@ export const createSession = async (user) => {
 };
 
 const cookieAttributes = () => {
-  const parts = ["Path=/", "HttpOnly", "SameSite=Lax"];
-  if (config.cookieSecure) parts.push("Secure");
+  const parts = ["Path=/", "HttpOnly", `SameSite=${config.cookieSameSite}`];
+  // SameSite=None is only accepted by browsers over HTTPS.
+  if (config.cookieSecure || config.cookieSameSite === "None") parts.push("Secure");
   return parts;
 };
 
