@@ -29,7 +29,9 @@ const MIME_TYPES = {
 };
 
 const sendJson = (res, status, payload, details) => {
-  const body = JSON.stringify(details ? { error: payload, details } : { error: payload });
+  const body = JSON.stringify(
+    details ? { error: payload, details } : { error: payload },
+  );
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
@@ -41,26 +43,29 @@ const sendJson = (res, status, payload, details) => {
 // Same-origin writes only, on top of the cookie session: random pages on other
 // origins must not be able to drive the signed-in admin's session (CSRF).
 const allowedOrigins = new Set(
-  (process.env.ALLOWED_ORIGINS ?? "https://olevswatchshop.netlify.app/")
+  (
+    process.env.ALLOWED_ORIGINS ??
+    "https://olevswatchshop.netlify.app"
+  )
     .split(",")
-    .map((item) => item.trim())
+    .map((item) => item.trim().replace(/\/+$/, ""))
     .filter(Boolean)
 );
 
-// Same-origin writes only, on top of the cookie session: random pages on other
-// origins must not be able to drive the signed-in admin's session (CSRF).
 const originAllowed = (req) => {
   const origin = req.headers.origin;
+
   if (!origin) return true;
 
   try {
     const parsed = new URL(origin);
-    const hostHeader = req.headers.host;
-    if (hostHeader && parsed.host === hostHeader) return true;
+    const normalizedOrigin = parsed.origin;
+
     if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
       return true;
     }
-    return allowedOrigins.has(origin);
+
+    return allowedOrigins.has(normalizedOrigin);
   } catch {
     return false;
   }
@@ -71,7 +76,7 @@ const serveStatic = (req, res, pathname) => {
     return sendJson(
       res,
       404,
-      "API only — run `npm run build` inside storefront to serve the app from here."
+      "API only — run `npm run build` inside storefront to serve the app from here.",
     );
   }
 
@@ -83,7 +88,11 @@ const serveStatic = (req, res, pathname) => {
   }
 
   let filePath = resolve(distDir, `.${decoded}`);
-  if (filePath !== distDir && !filePath.startsWith(`${distDir}\\`) && !filePath.startsWith(`${distDir}/`)) {
+  if (
+    filePath !== distDir &&
+    !filePath.startsWith(`${distDir}\\`) &&
+    !filePath.startsWith(`${distDir}/`)
+  ) {
     return sendJson(res, 403, "Forbidden.");
   }
 
@@ -106,13 +115,20 @@ const serveStatic = (req, res, pathname) => {
 
 const server = http.createServer(async (req, res) => {
   const startedAt = Date.now();
-  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  const url = new URL(
+    req.url ?? "/",
+    `http://${req.headers.host ?? "localhost"}`,
+  );
 
   if (config.logRequests) {
     res.on("finish", () => {
-      if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/products/")) return;
+      if (
+        url.pathname.startsWith("/assets/") ||
+        url.pathname.startsWith("/products/")
+      )
+        return;
       console.log(
-        `${req.method} ${url.pathname} → ${res.statusCode} (${Date.now() - startedAt}ms)`
+        `${req.method} ${url.pathname} → ${res.statusCode} (${Date.now() - startedAt}ms)`,
       );
     });
   }
@@ -120,15 +136,31 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
       if (!originAllowed(req)) {
-        return sendJson(res, 403, "Requests from other origins are not allowed.");
+        return sendJson(
+          res,
+          403,
+          "Requests from other origins are not allowed.",
+        );
       }
 
       if (req.headers.origin) {
         res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+
         res.setHeader("Vary", "Origin");
+
         res.setHeader("Access-Control-Allow-Credentials", "true");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-        res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type, Authorization",
+        );
+
+        res.setHeader(
+          "Access-Control-Allow-Methods",
+          "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        );
+
+        res.setHeader("Access-Control-Max-Age", "86400");
       }
 
       if (req.method === "OPTIONS") {
@@ -147,7 +179,12 @@ const server = http.createServer(async (req, res) => {
   } catch (error) {
     const status = Number(error.status) || 500;
     if (status >= 500) console.error("[api]", error);
-    return sendJson(res, status, error.message ?? "Internal server error", error.details);
+    return sendJson(
+      res,
+      status,
+      error.message ?? "Internal server error",
+      error.details,
+    );
   }
 });
 
@@ -158,7 +195,7 @@ const boot = async () => {
       `\n✖ Missing ${missing.join(", ")}.\n` +
         `  Add your MongoDB connection string to ${envPath}, e.g.\n` +
         '  MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>/olevs?retryWrites=true&w=majority"\n' +
-        "  (free cluster: https://www.mongodb.com/cloud/atlas/register)\n"
+        "  (free cluster: https://www.mongodb.com/cloud/atlas/register)\n",
     );
     process.exitCode = 1;
     return;
@@ -187,7 +224,7 @@ const boot = async () => {
     console.log(
       admin.generated
         ? " Set ADMIN_EMAIL / ADMIN_PASSWORD in server/.env, or run\n `npm run admin:create -- <email> <password>` to choose your own."
-        : " Credentials came from ADMIN_EMAIL / ADMIN_PASSWORD in server/.env."
+        : " Credentials came from ADMIN_EMAIL / ADMIN_PASSWORD in server/.env.",
     );
     console.log(`${line}\n`);
   }
