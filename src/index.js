@@ -40,6 +40,15 @@ const sendJson = (res, status, payload, details) => {
 
 // Same-origin writes only, on top of the cookie session: random pages on other
 // origins must not be able to drive the signed-in admin's session (CSRF).
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS ?? "https://olevswatchshop.netlify.app/")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+);
+
+// Same-origin writes only, on top of the cookie session: random pages on other
+// origins must not be able to drive the signed-in admin's session (CSRF).
 const originAllowed = (req) => {
   const origin = req.headers.origin;
   if (!origin) return true;
@@ -48,7 +57,10 @@ const originAllowed = (req) => {
     const parsed = new URL(origin);
     const hostHeader = req.headers.host;
     if (hostHeader && parsed.host === hostHeader) return true;
-    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+      return true;
+    }
+    return allowedOrigins.has(origin);
   } catch {
     return false;
   }
